@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Dessin SVG dynamique</title>
+  <!-- voir https://greensock.com/docs/v3/Installation#installer -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+</head>
+<body>
+  <!-- dessin SVG créé et modifié par les scripts JS -->
+  <svg xmlns="http://www.w3.org/2000/svg"
+        width="100%" viewBox="0 0 200 200"
+        id="dessin">
+  </svg>
+
+  <!-- utilisation du mixin SVGelement -->
+  <script src="svgelement.js"></script>
+
+  <script>
+// compléments à la librairie Math
+Math.radians = (deg) => deg * Math.PI / 180
+Math.degrees = (rad) => rad / Math.PI * 180
+class Led {
+
+    TLled = gsap.timeline();
+
+    constructor(parent, x, y, radius) {
+        this.led = parent.appendElement("circle", {
+            cx:x,
+            cy:y,
+            r: radius - radius/16,
+            fill: "gray",
+            stroke: "black",
+            'stroke-width': radius/8
+        })
+        this.led.turnOn(TLled, 1.0) // allumage en 1 seconde
+        this.led.turnOff(TLled, 0.5, ">+2") // extinction en 1/2 s après 2 secondes
+    }
+
+    turnOn(timeline, duration=0.1, position=">") {}
+    turnOff(timeline, duration=0.1, position=">") {}
+}
+
+// dessin SVG
+const svg = SVGelement.fromSelector("#dessin")
+
+class LedRibbon {
+    constructor(parent, {
+        number,
+        x,
+        y,
+        radius = 5,
+        spacing = 4
+    } = {}) {
+        // liste des leds créées par ce ruban
+        this.leds = []
+
+        for (let i = 0; i < number; i++) {
+            this.leds.push(
+                new Led(parent, x + ( radius *2 + spacing ) * i, y, radius)
+            )
+        }
+    }
+}
+
+// dessiner un ruban de leds
+
+function fonctionA(
+      oblig1,
+      {
+        oblig2,
+        oblig3,
+        param_opt1 = 5,
+        param_opt2 = 4
+      } = {}
+    ) {
+
+      const ribbon = new LedRibbon(svg, {
+        number: oblig1,
+        x: oblig2,
+        y: oblig3,
+        radius: param_opt1,
+        spacing: param_opt2
+      })
+
+      return ribbon
+    }
+
+fonctionA(5, {oblig2: 50, oblig3: 50, param_opt1: 10, param_opt2: 5})
+
+  </script>
+</body>
+</html>
