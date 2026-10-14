@@ -15,7 +15,7 @@ d3.selection.prototype.appendIfAbsent = function(selector, type) {
   return element.empty() ? this.append(type) : element
 }
 
-function PartitionFloue(trapezes) {
+function PartitionFloue(trapezes, transform=null) {
     console.log("TRAPEZES", trapezes);
 
     const width = 600;
@@ -29,9 +29,19 @@ function PartitionFloue(trapezes) {
 
     const N = trapezes.length;
 
-    const fX = d3.scaleLinear()
+    let fX = d3.scaleLinear()
         .domain([trapezes[0].supL - 1, trapezes[N - 1].supH + 1])
         .range([margin.left, width - margin.right]);
+    
+    if (transform != null) {
+        fX = transform.rescaleX(fX)
+    }
+
+    const zoom = d3.zoom()
+        .extent([[0, 0], [width, height]])
+        .scaleExtent([0.25, 64])
+        .on("zoom", ({transform}) => PartitionFloue(trapezes, transform))
+    svg.call(zoom)    
 
     const fY = d3.scaleLinear()
         .domain([0, 1])
