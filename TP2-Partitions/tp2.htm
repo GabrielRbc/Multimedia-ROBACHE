@@ -15,7 +15,7 @@ d3.selection.prototype.appendIfAbsent = function(selector, type) {
   return element.empty() ? this.append(type) : element
 }
 
-function PartitionFloue(trapezes, transform=null) {
+function PartitionFloue(trapezes, transform = null) {
     console.log("TRAPEZES", trapezes);
 
     const width = 600;
@@ -29,30 +29,57 @@ function PartitionFloue(trapezes, transform=null) {
 
     const N = trapezes.length;
 
+    trapezes.forEach(t => {
+        t.prec = null;
+        t.next = null;
+    });
+    for (let i = 0; i < N; i++) {
+        if (i > 0) {
+            trapezes[i].prec = trapezes[i - 1];
+            trapezes[i - 1].next = trapezes[i];
+        }
+    }
+
     let fX = d3.scaleLinear()
         .domain([trapezes[0].supL - 1, trapezes[N - 1].supH + 1])
         .range([margin.left, width - margin.right]);
     
     if (transform != null) {
-        fX = transform.rescaleX(fX)
+        fX = transform.rescaleX(fX);
     }
 
     const zoom = d3.zoom()
         .extent([[0, 0], [width, height]])
         .scaleExtent([0.25, 64])
-        .on("zoom", ({transform}) => PartitionFloue(trapezes, transform))
-    svg.call(zoom)    
+        .on("zoom", ({transform}) => PartitionFloue(trapezes, transform));
+    svg.call(zoom);
 
     const fY = d3.scaleLinear()
         .domain([0, 1])
         .range([height - margin.bottom, margin.top]);
 
     const fColor = d3.scaleOrdinal()
-        .domain(d3.range(0, N, 1))
+        .domain(d3.range(-1, 10, 1))
         .range(d3.schemeSet2);
 
     const bottom = fY(0);
     const top = fY(1);
+
+    function onDragCorL(event, trp) {
+        let x = fX.invert(event.x);
+        if (x < trp.supL || x > trp.corH) return;
+        trp.corL = x;
+        if (trp.prec) trp.prec.supH = x;
+        PartitionFloue(trapezes, transform);
+    }
+
+    function onDragCorH(event, trp) {
+        let x = fX.invert(event.x);
+        if (x < trp.corL || x > trp.supH) return;
+        trp.corH = x;
+        if (trp.next) trp.next.supL = x;
+        PartitionFloue(trapezes, transform);
+    }
 
     const grpTrapezes = svg.appendIfAbsent("#ida", "g").attr("id", "ida");
 
@@ -61,6 +88,7 @@ function PartitionFloue(trapezes, transform=null) {
         .join(
             enter => {
                 const g = enter.append("g");
+
                 g.append("path")
                     .attr("d", d => `M ${fX(d.supL)} ${bottom} L ${fX(d.corL)} ${top} L ${fX(d.corH)} ${top} L ${fX(d.supH)} ${bottom}`)
                     .attr("stroke", d => fColor(d.id))
@@ -73,6 +101,28 @@ function PartitionFloue(trapezes, transform=null) {
                     .attr("x", d => fX((d.corL + d.corH) / 2))
                     .attr("y", (top + bottom) / 2)
                     .attr("text-anchor", "middle");
+
+                g.append("circle")
+                    .classed("corL", true)
+                    .attr("cx", d => fX(d.corL))
+                    .attr("cy", top)
+                    .attr("r", 5)
+                    .attr("stroke", d => fColor(d.id))
+                    .attr("stroke-width", 2)
+                    .attr("fill", d => fColor(d.id))
+                    .attr("fill-opacity", 0.8)
+                    .call(d3.drag().on("drag", onDragCorL));
+
+                g.append("circle")
+                    .classed("corH", true)
+                    .attr("cx", d => fX(d.corH))
+                    .attr("cy", top)
+                    .attr("r", 5)
+                    .attr("stroke", d => fColor(d.id))
+                    .attr("stroke-width", 2)
+                    .attr("fill", d => fColor(d.id))
+                    .attr("fill-opacity", 0.8)
+                    .call(d3.drag().on("drag", onDragCorH));
             },
             update => {
                 update.select("path")
@@ -87,6 +137,16 @@ function PartitionFloue(trapezes, transform=null) {
                     .attr("x", d => fX((d.corL + d.corH) / 2))
                     .attr("y", (top + bottom) / 2)
                     .attr("text-anchor", "middle");
+
+                update.select("circle.corL")
+                    .attr("cx", d => fX(d.corL))
+                    .attr("cy", top)
+                    .call(d3.drag().on("drag", onDragCorL));
+
+                update.select("circle.corH")
+                    .attr("cx", d => fX(d.corH))
+                    .attr("cy", top)
+                    .call(d3.drag().on("drag", onDragCorH));
             }
         );
 
@@ -112,7 +172,6 @@ const Trapezes2 = [
     { id: 4, supL: 38, corL: 42, corH: 60, supH: 80, nom: "brûlant" },
 ];
 
-PartitionFloue(Trapezes);
 PartitionFloue(Trapezes2);
 
   </script>
