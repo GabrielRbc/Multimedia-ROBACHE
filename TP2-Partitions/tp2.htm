@@ -59,7 +59,7 @@ function PartitionFloue(trapezes, transform = null) {
         .range([height - margin.bottom, margin.top]);
 
     const fColor = d3.scaleOrdinal()
-        .domain(d3.range(-1, 10, 1))
+        .domain(d3.range(0, N, 1))
         .range(d3.schemeSet2);
 
     const bottom = fY(0);
